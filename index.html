@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b3d62">
+<title>NVU تمريض</title>
+<style>
+:root{--bg:#f2f5f9;--card:#fff;--ink:#12263a;--mut:#6b7b8c;--pri:#0b3d62;--acc:#f7931e;--oth:#e6edf4;--line:#dde4ec}
+@media(prefers-color-scheme:dark){:root{--bg:#0d1a26;--card:#13273a;--ink:#e8eef4;--mut:#93a5b6;--pri:#17598c;--oth:#1d3850;--line:#25405a}}
+*{box-sizing:border-box}html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font:15px Tahoma,Arial,sans-serif}
+input,button{font:inherit}
+input{width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink)}
+button{border:0;border-radius:10px;padding:12px 16px;background:var(--acc);color:#fff;font-weight:700;cursor:pointer}
+button:disabled{opacity:.5}
+#auth{max-width:420px;margin:0 auto;padding:24px 16px}
+.logo{background:var(--pri);color:#fff;border-radius:16px;padding:22px;text-align:center;margin-bottom:16px}
+.logo b{font-size:34px;letter-spacing:2px;display:block}
+.card{background:var(--card);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px;border:1px solid var(--line)}
+.lnk{background:none;color:var(--pri);font-weight:400;padding:6px}
+.err{color:#d33;font-size:13px;min-height:16px}
+#app{display:none;height:100%}#app.on{display:flex}
+.pane{flex-direction:column;height:100%}
+#listp{display:flex;width:100%}#chatp{display:none;width:100%}
+#app.chatting #listp{display:none}#app.chatting #chatp{display:flex}
+@media(min-width:760px){#listp{width:340px;border-inline-end:1px solid var(--line)}#chatp{display:flex!important;flex:1}#back{display:none}}
+.top{background:var(--pri);color:#fff;padding:12px 14px;display:flex;align-items:center;gap:8px}
+.top h2{margin:0;font-size:16px;flex:1}
+.top button{background:transparent;padding:6px 10px}
+.chip{background:var(--acc);border-radius:20px;padding:3px 10px;font-size:12px;direction:ltr}
+#items{overflow:auto;flex:1}
+.it{display:flex;gap:10px;align-items:center;padding:11px 14px;border-bottom:1px solid var(--line);background:var(--card);cursor:pointer}
+.av{width:40px;height:40px;border-radius:50%;background:var(--pri);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;flex:none}
+.it small,.row small{display:block;color:var(--mut)}
+#msgs{flex:1;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:6px}
+.b{max-width:80%;padding:8px 12px;border-radius:14px;background:var(--oth);align-self:flex-start;word-break:break-word;white-space:pre-wrap}
+.b.me{background:var(--pri);color:#fff;align-self:flex-end}
+.b i{display:block;font-size:11px;color:var(--acc);font-style:normal;font-weight:700}
+.send{display:flex;gap:8px;padding:10px;background:var(--card);border-top:1px solid var(--line)}
+.empty{margin:auto;color:var(--mut);padding:20px;text-align:center}
+#panel{display:none;position:fixed;inset:0;z-index:9;background:var(--bg);flex-direction:column}
+#pbody{overflow:auto;flex:1}
+.row{padding:10px 14px;border-bottom:1px solid var(--line);background:var(--card)}
+.stat{font-size:28px;font-weight:700;color:var(--acc)}
+.tabs{display:flex;gap:8px;padding:10px}
+</style>
+</head>
+<body>
+<div id="auth">
+  <div class="logo"><b>NVU</b>جامعة وادي النيل – كلية التمريض</div>
+  <div class="card">
+    <h3 id="ttl" style="margin:0">تسجيل الدخول</h3>
+    <input class="rg" id="nm" placeholder="الاسم الكامل" style="display:none">
+    <input class="rg" id="un" placeholder="الـ ID الجامعي" dir="ltr" style="display:none;text-align:right">
+    <input id="ph" placeholder="رقم الهاتف" inputmode="tel" dir="ltr" style="text-align:right">
+    <input id="pw" type="password" placeholder="كلمة المرور (6 أحرف على الأقل)">
+    <div class="err" id="er"></div>
+    <button id="go">دخول</button>
+    <button class="lnk" id="sw">طالب جديد؟ سجّل هنا</button>
+  </div>
+</div>
+<div id="app">
+  <div id="listp" class="pane">
+    <div class="top"><h2 id="who"></h2><span class="chip" id="myid"></span><button id="adm" style="display:none">⚙️</button><button id="out">خروج</button></div>
+    <div style="padding:10px"><input id="q" placeholder="ابحث بالاسم أو الـ ID"></div>
+    <div id="items"></div>
+    <button class="lnk" id="uidb">نسخ الـ UID (للأدمن عند الإعداد فقط)</button>
+  </div>
+  <div id="chatp" class="pane">
+    <div class="top"><button id="back">→</button><h2 id="ct"></h2></div>
+    <div id="msgs"></div>
+    <div class="send"><input id="tx" placeholder="اكتب رسالة…"><button id="sd">إرسال</button></div>
+  </div>
+</div>
+<div id="panel">
+  <div class="top"><button id="pb">→</button><h2>لوحة الإدارة</h2></div>
+  <div class="tabs"><button id="t1">الطلاب</button><button id="t2">فريق العمل</button></div>
+  <div id="pbody"></div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+// ===== الصق إعدادات Firebase بتاعتك هنا (من Project settings ← Your apps) =====
+const firebaseConfig = {
+  apiKey: "AIzaSyCyMOtLU775kk3_xnmmAmV7AN-__Z3zU3o",
+  authDomain: "nvu-nursing1.firebaseapp.com",
+  projectId: "nvu-nursing1",
+  appId: "1:832860373737:web:638cc1d36b813d33e1e678"
+};
+// ==============================================================================
+
+const $=s=>document.querySelector(s);
+const el=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e};
+if(firebaseConfig.apiKey==="PASTE_HERE"){$("#er").textContent="لازم تلصق إعدادات Firebase في الملف أولًا";$("#go").disabled=true}
+else firebase.initializeApp(firebaseConfig);
+const auth=firebase.apps.length?firebase.auth():null,db=firebase.apps.length?firebase.firestore():null;
+const TS=()=>firebase.firestore.FieldValue.serverTimestamp();
+const mail=p=>p+"@nvu-nursing.app";
+let me,uid,lv=0,reg=false,registering=false,users=[],cur="all",tab=1,recs=[],staff=[],pq="",unU,unM,unR,unS;
+
+$("#sw").onclick=()=>{reg=!reg;document.querySelectorAll(".rg").forEach(e=>e.style.display=reg?"":"none");
+  $("#ttl").textContent=reg?"تسجيل طالب جديد":"تسجيل الدخول";$("#go").textContent=reg?"تسجيل":"دخول";
+  $("#sw").textContent=reg?"عندي حساب – دخول":"طالب جديد؟ سجّل هنا";$("#er").textContent=""};
+
+$("#go").onclick=async()=>{
+  const phone=$("#ph").value.replace(/[\s-]/g,""),pass=$("#pw").value,name=$("#nm").value.trim(),univ=$("#un").value.trim().toUpperCase(),er=$("#er");
+  er.textContent="";
+  if(!/^\+?\d{10,14}$/.test(phone))return er.textContent="رقم الهاتف غير صحيح";
+  if(pass.length<6)return er.textContent="كلمة المرور 6 أحرف على الأقل";
+  if(reg&&(name.length<3||!/^[A-Z0-9-]{5,15}$/.test(univ)))return er.textContent="راجع الاسم والـ ID الجامعي";
+  $("#go").disabled=true;
+  try{
+    if(!reg)await auth.signInWithEmailAndPassword(mail(phone),pass);
+    else{
+      registering=true;
+      const u=(await auth.createUserWithEmailAndPassword(mail(phone),pass)).user;
+      const sid="NVU-NUR-"+(100000+Math.floor(Math.random()*900000));
+      try{
+        const b=db.batch();
+        b.set(db.doc("univ_ids/"+univ),{uid:u.uid});
+        b.set(db.doc("users/"+u.uid),{name,sid});
+        b.set(db.doc("private/"+u.uid),{name,phone,univ,sid,ts:TS()});
+        await b.commit();
+      }catch(e){await u.delete();throw "dup"}
+      registering=false;enter(u);
+    }
+  }catch(e){registering=false;er.textContent=e==="dup"?"هذا الـ ID الجامعي مسجّل من قبل":"تعذّر الدخول: راجع البيانات (أو الرقم مسجّل بالفعل)"}
+  $("#go").disabled=false;
+};
+if(auth)auth.onAuthStateChanged(u=>{if(registering)return;u?enter(u):leave()});
+
+async function enter(u){
+  uid=u.uid;
+  let p=await db.doc("users/"+uid).get();
+  for(let i=0;i<10&&!p.exists;i++){await new Promise(r=>setTimeout(r,500));p=await db.doc("users/"+uid).get()}
+  if(!p.exists){auth.signOut();return}
+  me=p.data();
+  lv=(await db.doc("admins/"+uid).get()).exists?2:(await db.doc("staff/"+uid).get()).exists?1:0;
+  $("#auth").style.display="none";$("#app").classList.add("on");
+  $("#who").textContent=me.name;$("#myid").textContent=me.sid;$("#adm").style.display=lv?"":"none";
+  unU&&unU();unU=db.collection("users").orderBy("name").onSnapshot(s=>{users=s.docs.map(d=>({id:d.id,...d.data()}));list()});
+}
+function leave(){[unU,unM,unR,unS].forEach(f=>f&&f());unU=unM=unR=unS=null;
+  $("#app").classList.remove("on","chatting");$("#panel").style.display="none";$("#auth").style.display="block"}
+$("#out").onclick=()=>auth.signOut();
+$("#uidb").onclick=()=>{navigator.clipboard.writeText(uid).then(()=>alert("تم نسخ الـ UID"))};
+
+function item(av,title,sub,fn){const d=el("div","it"),a=el("div","av",av),t=el("div");
+  t.append(el("b",0,title),el("small",0,sub));d.append(a,t);d.onclick=fn;return d}
+function list(){
+  const box=$("#items");box.textContent="";
+  box.append(item("👥","مجموعة تمريض NVU","المحادثة العامة لكل الطلاب",()=>open("all","مجموعة تمريض NVU")));
+  const q=$("#q").value.trim().toLowerCase();
+  users.filter(u=>u.id!==uid&&(!q||(u.name+" "+u.sid).toLowerCase().includes(q)))
+    .forEach(u=>box.append(item(u.name.charAt(0),u.name,u.sid,()=>open([uid,u.id].sort().join("_"),u.name))));
+}
+$("#q").oninput=list;
+
+function open(chat,title){
+  cur=chat;$("#ct").textContent=title;$("#app").classList.add("chatting");
+  unM&&unM();
+  unM=db.collection("chats/"+chat+"/messages").orderBy("ts").limitToLast(200).onSnapshot(s=>{
+    const box=$("#msgs");box.textContent="";
+    if(s.empty){box.append(el("div","empty","لا توجد رسائل بعد — ابدأ المحادثة 👋"));return}
+    s.docs.forEach(d=>{const m=d.data(),b=el("div","b"+(m.from===uid?" me":""));
+      if(chat==="all"&&m.from!==uid)b.append(el("i",0,m.fromName));
+      b.append(document.createTextNode(m.text));box.append(b)});
+    box.scrollTop=box.scrollHeight;
+  },()=>{$("#msgs").textContent="تعذّر تحميل الرسائل"});
+}
+$("#back").onclick=()=>{unM&&unM();unM=null;$("#app").classList.remove("chatting")};
+function send(){const t=$("#tx").value.trim();if(!t)return;$("#tx").value="";
+  db.collection("chats/"+cur+"/messages").add({from:uid,fromName:me.name,text:t.slice(0,1000),ts:TS()})}
+$("#sd").onclick=send;$("#tx").onkeydown=e=>{if(e.key==="Enter")send()};
+
+// ===== لوحة الإدارة =====
+$("#adm").onclick=()=>{
+  $("#panel").style.display="flex";
+  unR&&unR();unR=db.collection("private").orderBy("ts","desc").onSnapshot(s=>{recs=s.docs.map(d=>d.data());draw()},()=>{$("#pbody").textContent="لا تملك صلاحية العرض"});
+  unS&&unS();unS=db.collection("staff").onSnapshot(s=>{staff=s.docs.map(d=>({id:d.id,...d.data()}));draw()});
+};
+$("#pb").onclick=()=>{$("#panel").style.display="none";unR&&unR();unS&&unS();unR=unS=null};
+$("#t1").onclick=()=>{tab=1;draw()};$("#t2").onclick=()=>{tab=2;draw()};
+function csv(){
+  const rows=[["الاسم","ID الجامعي","الهاتف","ID التطبيق"],...recs.map(r=>[r.name,r.univ,r.phone,r.sid])];
+  const t="\ufeff"+rows.map(r=>r.map(x=>'"'+String(x).replace(/"/g,'""')+'"').join(",")).join("\n");
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([t],{type:"text/csv"}));a.download="nvu-students.csv";a.click();
+}
+function draw(){
+  const b=$("#pbody");if(!b)return;b.textContent="";
+  $("#t1").style.opacity=tab==1?1:.55;$("#t2").style.opacity=tab==2?1:.55;
+  const c=el("div","row");c.append(el("div","stat",String(recs.length)),el("small",0,"عدد الطلاب المسجّلين"));b.append(c);
+  if(tab==1){
+    const w=el("div","row"),q=el("input"),dl=el("button",0,"تنزيل CSV"),L=el("div");
+    q.placeholder="ابحث بالاسم أو الـ ID أو الهاتف";q.value=pq;dl.onclick=csv;dl.style.marginTop="8px";w.append(q,dl);b.append(w,L);
+    const f=()=>{L.textContent="";recs.filter(r=>!pq||[r.name,r.univ,r.phone,r.sid].join(" ").toLowerCase().includes(pq)).forEach(r=>{
+      const d=el("div","row");d.append(el("b",0,r.name),el("small",0,"ID جامعي: "+r.univ+" · هاتف: "+r.phone),el("small",0,"ID التطبيق: "+r.sid));L.append(d)})};
+    q.oninput=()=>{pq=q.value.trim().toLowerCase();f()};f();
+  }else{
+    if(lv===2){const w=el("div","row"),i=el("input"),a=el("button",0,"إضافة لفريق العمل");
+      i.placeholder="ID التطبيق للعضو (NVU-NUR-...)";a.style.marginTop="8px";
+      a.onclick=async()=>{const r=await db.collection("users").where("sid","==",i.value.trim()).limit(1).get();
+        if(r.empty)return alert("الـ ID غير موجود");const x=r.docs[0].data();
+        await db.doc("staff/"+r.docs[0].id).set({name:x.name,sid:x.sid});i.value=""};
+      w.append(i,a);b.append(w)}
+    staff.forEach(s=>{const d=el("div","row");d.append(el("b",0,s.name),el("small",0,s.sid));
+      if(lv===2){const x=el("button",0,"إزالة");x.style.cssText="margin-top:6px;padding:6px 12px";x.onclick=()=>db.doc("staff/"+s.id).delete();d.append(x)}
+      b.append(d)});
+  }
+}
+</script>
+</body>
+</html>
